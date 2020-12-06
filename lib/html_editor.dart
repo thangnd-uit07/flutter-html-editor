@@ -8,7 +8,6 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:html_editor/local_server.dart';
-import 'package:html_editor/pick_image.dart';
 import 'package:path/path.dart' as p;
 import 'package:webview_flutter/webview_flutter.dart';
 
@@ -27,16 +26,21 @@ class HtmlEditor extends StatefulWidget {
   final String widthImage;
   final bool showBottomToolbar;
   final String hint;
+  final String defaultPage;
+  final dynamic imageSelector;
 
-  HtmlEditor(
-      {Key key,
-      this.value,
-      this.height = 380,
-      this.decoration,
-      this.useBottomSheet = true,
-      this.widthImage = "100%",
-      this.showBottomToolbar = true,
-      this.hint})
+  HtmlEditor({
+    Key key,
+    this.value,
+    this.height = 380,
+    this.decoration,
+    this.useBottomSheet = true,
+    this.widthImage = "100%",
+    this.showBottomToolbar = true,
+    this.defaultPage,
+    this.imageSelector,
+    this.hint
+  })
       : super(key: key);
 
   @override
@@ -101,6 +105,44 @@ class HtmlEditorState extends State<HtmlEditor> {
           ),
       child: Column(
         children: <Widget>[
+          Padding(
+            padding: const EdgeInsets.only(
+                left: 10, right: 10, bottom: 5, top: 10),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.start,
+              children: <Widget>[
+                widgetIcon(Icons.image, onKlik: () async{
+                  widget.useBottomSheet
+                      ? bottomSheetPickImage(context)
+                      : dialogPickImage(context);
+                }),
+                Container(width: 5,),
+                widgetIcon(Icons.content_copy, onKlik: () async {
+                  String data = await getText();
+                  Clipboard.setData(new ClipboardData(text: data));
+                }),
+                Container(width: 5,),
+                widgetIcon(Icons.content_paste,
+                    onKlik: () async {
+                  ClipboardData data =
+                      await Clipboard.getData(Clipboard.kTextPlain);
+
+                  String txtIsi = data.text
+                      .replaceAll("'", '\\"')
+                      .replaceAll('"', '\\"')
+                      .replaceAll("[", "\\[")
+                      .replaceAll("]", "\\]")
+                      .replaceAll("\n", "<br/>")
+                      .replaceAll("\n\n", "<br/>")
+                      .replaceAll("\r", " ")
+                      .replaceAll('\r\n', " ");
+                  String txt =
+                      "\$('.note-editable').append( '" + txtIsi + "');";
+                  _controller.evaluateJavascript(txt);
+                }),
+              ],
+            ),
+          ),
           Expanded(
             child: WebView(
               key: _mapKey,
@@ -110,13 +152,18 @@ class HtmlEditorState extends State<HtmlEditor> {
               onWebViewCreated: (webViewController) {
                 _controller = webViewController;
 
-                if (Platform.isAndroid) {
+                if(widget.defaultPage != null){
+                  final String contentBase64 = base64Encode(const Utf8Encoder().convert(widget.defaultPage));
+                  _controller.loadUrl('data:text/html;base64,$contentBase64');
+                }else{
+                  if (Platform.isAndroid) {
                   final filename =
                       'packages/html_editor/summernote/summernote.html';
-                  _controller.loadUrl(
-                      "file:///android_asset/flutter_assets/" + filename);
-                } else {
-                  _loadHtmlFromAssets();
+                    _controller.loadUrl(
+                        "file:///android_asset/flutter_assets/" + filename);
+                  } else {
+                    _loadHtmlFromAssets();
+                  }
                 }
               },
               javascriptMode: JavascriptMode.unrestricted,
@@ -141,52 +188,7 @@ class HtmlEditorState extends State<HtmlEditor> {
                 }
               },
             ),
-          ),
-          widget.showBottomToolbar
-              ? Divider()
-              : Container(
-                  height: 1,
-                ),
-          widget.showBottomToolbar
-              ? Padding(
-                  padding: const EdgeInsets.only(
-                      left: 4.0, right: 4, bottom: 8, top: 2),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceAround,
-                    children: <Widget>[
-                      widgetIcon(Icons.image, "Image", onKlik: () {
-                        widget.useBottomSheet
-                            ? bottomSheetPickImage(context)
-                            : dialogPickImage(context);
-                      }),
-                      widgetIcon(Icons.content_copy, "Copy", onKlik: () async {
-                        String data = await getText();
-                        Clipboard.setData(new ClipboardData(text: data));
-                      }),
-                      widgetIcon(Icons.content_paste, "Paste",
-                          onKlik: () async {
-                        ClipboardData data =
-                            await Clipboard.getData(Clipboard.kTextPlain);
-
-                        String txtIsi = data.text
-                            .replaceAll("'", '\\"')
-                            .replaceAll('"', '\\"')
-                            .replaceAll("[", "\\[")
-                            .replaceAll("]", "\\]")
-                            .replaceAll("\n", "<br/>")
-                            .replaceAll("\n\n", "<br/>")
-                            .replaceAll("\r", " ")
-                            .replaceAll('\r\n', " ");
-                        String txt =
-                            "\$('.note-editable').append( '" + txtIsi + "');";
-                        _controller.evaluateJavascript(txt);
-                      }),
-                    ],
-                  ),
-                )
-              : Container(
-                  height: 1,
-                )
+          ),         
         ],
       ),
     );
@@ -250,30 +252,23 @@ class HtmlEditorState extends State<HtmlEditor> {
     _controller.evaluateJavascript(hint);
   }
 
-  Widget widgetIcon(IconData icon, String title, {OnClik onKlik}) {
+  WebViewController getController() => _controller;
+
+  Widget widgetIcon(IconData icon, {OnClik onKlik}) {
     return InkWell(
-      onTap: () {
-        onKlik();
+      onTap: () async{
+        if(onKlik != null){
+          onKlik();
+        }
       },
-      child: Row(
-        children: <Widget>[
-          Icon(
-            icon,
-            color: Colors.black38,
-            size: 20,
-          ),
-          Padding(
-            padding: const EdgeInsets.only(left: 4),
-            child: Text(
-              title,
-              style: TextStyle(
-                  color: Colors.black54,
-                  fontSize: 16,
-                  fontWeight: FontWeight.w400),
-            ),
-          )
-        ],
-      ),
+      child: Container(
+        padding: EdgeInsets.only(left: 8, right: 8, top: 3, bottom: 3),
+        decoration: BoxDecoration(
+          border: Border.all(color: Colors.black12, width: 1),
+          borderRadius: BorderRadius.all(Radius.circular(4))
+        ),
+        child: Icon(icon, size: 20, color: Colors.black54,)
+      )
     );
   }
 
@@ -292,19 +287,23 @@ class HtmlEditorState extends State<HtmlEditor> {
               ),
               padding: const EdgeInsets.all(12),
               height: 120,
-              child: PickImage(
-                  color: Colors.black45,
-                  callbackFile: (file) async {
-                    String filename = p.basename(file.path);
-                    List<int> imageBytes = await file.readAsBytes();
-                    String base64Image =
-                        "<img width=\"${widget.widthImage}\" src=\"data:image/png;base64, "
-                        "${base64Encode(imageBytes)}\" data-filename=\"$filename\">";
+              child: widget.imageSelector,
+              /*
+              PickImage(
+                color: Colors.black45,
+                callbackFile: (file) async {
+                  String filename = p.basename(file.path);
+                  List<int> imageBytes = await file.readAsBytes();
+                  String base64Image =
+                      "<img width=\"${widget.widthImage}\" src=\"data:image/png;base64, "
+                      "${base64Encode(imageBytes)}\" data-filename=\"$filename\">";
 
-                    String txt =
-                        "\$('.note-editable').append( '" + base64Image + "');";
-                    _controller.evaluateJavascript(txt);
-                  }),
+                  String txt =
+                      "\$('.note-editable').append( '" + base64Image + "');";
+                  _controller.evaluateJavascript(txt);
+                }
+              )
+               */
             ),
           );
         });
@@ -323,7 +322,9 @@ class HtmlEditorState extends State<HtmlEditor> {
                 child: Container(
               height: 140,
               width: double.infinity,
-              child: PickImage(callbackFile: (file) async {
+              child: widget.imageSelector,
+              /*
+              PickImage(callbackFile: (file) async {
                 String filename = p.basename(file.path);
                 List<int> imageBytes = await file.readAsBytes();
                 String base64Image = "<img width=\"${widget.widthImage}\" "
@@ -333,6 +334,7 @@ class HtmlEditorState extends State<HtmlEditor> {
                     "\$('.note-editable').append( '" + base64Image + "');";
                 _controller.evaluateJavascript(txt);
               }),
+              */
             ));
           });
         });
