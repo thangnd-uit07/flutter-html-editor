@@ -8,7 +8,6 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:html_editor/local_server.dart';
-import 'package:path/path.dart' as p;
 import 'package:webview_flutter/webview_flutter.dart';
 
 /*
@@ -106,24 +105,26 @@ class HtmlEditorState extends State<HtmlEditor> {
       child: Column(
         children: <Widget>[
           Padding(
-            padding: const EdgeInsets.only(
-                left: 10, right: 10, bottom: 5, top: 10),
+            padding: const EdgeInsets.only(left: 10, right: 10, bottom: 5, top: 10),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.start,
               children: <Widget>[
                 widgetIcon(Icons.image, onKlik: () async{
+                  await SystemChannels.textInput.invokeMethod('TextInput.hide');
                   widget.useBottomSheet
                       ? bottomSheetPickImage(context)
                       : dialogPickImage(context);
                 }),
                 Container(width: 5,),
                 widgetIcon(Icons.content_copy, onKlik: () async {
+                  await SystemChannels.textInput.invokeMethod('TextInput.hide');
                   String data = await getText();
                   Clipboard.setData(new ClipboardData(text: data));
                 }),
                 Container(width: 5,),
                 widgetIcon(Icons.content_paste,
                     onKlik: () async {
+                  await SystemChannels.textInput.invokeMethod('TextInput.hide');
                   ClipboardData data =
                       await Clipboard.getData(Clipboard.kTextPlain);
 
@@ -188,7 +189,8 @@ class HtmlEditorState extends State<HtmlEditor> {
                 }
               },
             ),
-          ),         
+          ),   
+          Container(height: 5,),
         ],
       ),
     );
@@ -287,6 +289,7 @@ class HtmlEditorState extends State<HtmlEditor> {
               ),
               padding: const EdgeInsets.all(12),
               height: 120,
+              width: 300,
               child: widget.imageSelector,
               /*
               PickImage(
