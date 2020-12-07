@@ -241,8 +241,8 @@ class HtmlEditorState extends State<HtmlEditor> {
         '\$("#summernote").summernote("fullscreen.toggle");');
   }
 
-  setFocus() {
-    _controller.evaluateJavascript("\$('#summernote').summernote('focus');");
+  Future<void> setFocus() async{
+    await _controller.evaluateJavascript("\$('#summernote').summernote('focus');");
   }
 
   setEmpty() {
@@ -288,8 +288,8 @@ class HtmlEditorState extends State<HtmlEditor> {
                 borderRadius: BorderRadius.all(Radius.circular(8)),
               ),
               padding: const EdgeInsets.all(12),
-              height: 120,
-              width: 300,
+              height: 240,
+              width: 320,
               child: widget.imageSelector,
               /*
               PickImage(
