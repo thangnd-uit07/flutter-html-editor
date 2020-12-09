@@ -51,6 +51,8 @@ class HtmlEditorState extends State<HtmlEditor> {
   String text = "";
   final Key _mapKey = UniqueKey();
 
+  bool _pageLoaded = false;
+
   int port = 5321;
   LocalServer localServer;
 
@@ -104,46 +106,65 @@ class HtmlEditorState extends State<HtmlEditor> {
           ),
       child: Column(
         children: <Widget>[
-          Padding(
-            padding: const EdgeInsets.only(left: 10, right: 10, bottom: 5, top: 10),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.start,
-              children: <Widget>[
-                widgetIcon(Icons.image, onKlik: () async{
-                  await SystemChannels.textInput.invokeMethod('TextInput.hide');
-                  widget.useBottomSheet
-                      ? bottomSheetPickImage(context)
-                      : dialogPickImage(context);
-                }),
-                Container(width: 5,),
-                widgetIcon(Icons.content_copy, onKlik: () async {
-                  await SystemChannels.textInput.invokeMethod('TextInput.hide');
-                  String data = await getText();
-                  Clipboard.setData(new ClipboardData(text: data));
-                }),
-                Container(width: 5,),
-                widgetIcon(Icons.content_paste,
-                    onKlik: () async {
-                  await SystemChannels.textInput.invokeMethod('TextInput.hide');
-                  ClipboardData data =
-                      await Clipboard.getData(Clipboard.kTextPlain);
+          !_pageLoaded ? Container() :
+            Padding(
+              padding: const EdgeInsets.only(left: 10, right: 10, bottom: 5, top: 10),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.start,
+                children: <Widget>[
+                  widgetIcon(Icons.image, onKlik: () async{
+                    await SystemChannels.textInput.invokeMethod('TextInput.hide');
+                    widget.useBottomSheet
+                        ? bottomSheetPickImage(context)
+                        : dialogPickImage(context);
+                  }),
+                  Container(width: 5,),
+                  widgetIcon(Icons.content_copy, onKlik: () async {
+                    String data = await getText();
+                    Clipboard.setData(new ClipboardData(text: data));
+                  }),
+                  Container(width: 5,),
+                  widgetIcon(Icons.content_paste,
+                      onKlik: () async {
+                    ClipboardData data =
+                        await Clipboard.getData(Clipboard.kTextPlain);
 
-                  String txtIsi = data.text
-                      .replaceAll("'", '\\"')
-                      .replaceAll('"', '\\"')
-                      .replaceAll("[", "\\[")
-                      .replaceAll("]", "\\]")
-                      .replaceAll("\n", "<br/>")
-                      .replaceAll("\n\n", "<br/>")
-                      .replaceAll("\r", " ")
-                      .replaceAll('\r\n', " ");
-                  String txt =
-                      "\$('.note-editable').append( '" + txtIsi + "');";
-                  _controller.evaluateJavascript(txt);
-                }),
-              ],
+                    String txtIsi = data.text
+                        .replaceAll("'", '\\"')
+                        .replaceAll('"', '\\"')
+                        .replaceAll("[", "\\[")
+                        .replaceAll("]", "\\]")
+                        .replaceAll("\n", "<br/>")
+                        .replaceAll("\n\n", "<br/>")
+                        .replaceAll("\r", " ")
+                        .replaceAll('\r\n', " ");
+                    var txt = '''
+                      var div = document.createElement('div');
+                      div.innerHTML = 
+                        "<div>" +
+                          "$txtIsi" +
+                        "</div>";
+                      \$('#summernote').summernote('insertNode', div.firstChild);
+                    ''';
+                    
+                    await setFocus();
+                    await _controller.evaluateJavascript(txt);
+                  }),
+                  Container(width: 5,),
+                  widgetIcon(Icons.delete_outline, onKlik: () async {
+                    await setEmpty();
+                  }),
+                  Container(width: 5,),
+                  widgetIcon(Icons.undo, onKlik: () async {
+                    await undo();
+                  }),
+                  Container(width: 5,),
+                  widgetIcon(Icons.redo, onKlik: () async {
+                    await redo();
+                  }),
+                ],
+              ),
             ),
-          ),
           Expanded(
             child: WebView(
               key: _mapKey,
@@ -187,6 +208,9 @@ class HtmlEditorState extends State<HtmlEditor> {
                 if (widget.value != null) {
                   setText(widget.value);
                 }
+                setState(() {
+                  _pageLoaded = true;
+                });
               },
             ),
           ),   
@@ -245,8 +269,16 @@ class HtmlEditorState extends State<HtmlEditor> {
     await _controller.evaluateJavascript("\$('#summernote').summernote('focus');");
   }
 
-  setEmpty() {
-    _controller.evaluateJavascript("\$('#summernote').summernote('reset');");
+  Future<void> setEmpty() async{
+    await _controller.evaluateJavascript("\$('#summernote').summernote('reset');");
+  }
+
+  Future<void> undo() async{
+    await _controller.evaluateJavascript("\$('#summernote').summernote('undo');");
+  }
+
+  Future<void> redo() async{
+    await _controller.evaluateJavascript("\$('#summernote').summernote('redo');");
   }
 
   setHint(String text) {
