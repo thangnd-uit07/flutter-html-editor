@@ -327,7 +327,7 @@ class HtmlEditorState extends State<HtmlEditor> {
               ),
               padding: const EdgeInsets.all(12),
               height: 240,
-              width: 320,
+              width: MediaQuery.of(context).size.width,
               child: widget.imageSelector,
               /*
               PickImage(
