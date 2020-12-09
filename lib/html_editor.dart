@@ -16,6 +16,7 @@ import 'package:webview_flutter/webview_flutter.dart';
  */
 
 typedef void OnClik();
+typedef void OnCopied(BuildContext context, String content);
 
 class HtmlEditor extends StatefulWidget {
   final String value;
@@ -27,6 +28,7 @@ class HtmlEditor extends StatefulWidget {
   final String hint;
   final String defaultPage;
   final dynamic imageSelector;
+  final OnCopied onCopied;
 
   HtmlEditor({
     Key key,
@@ -38,7 +40,8 @@ class HtmlEditor extends StatefulWidget {
     this.showBottomToolbar = true,
     this.defaultPage,
     this.imageSelector,
-    this.hint
+    this.hint,
+    this.onCopied
   })
       : super(key: key);
 
@@ -121,7 +124,10 @@ class HtmlEditorState extends State<HtmlEditor> {
                   Container(width: 5,),
                   widgetIcon(Icons.content_copy, onKlik: () async {
                     String data = await getText();
-                    Clipboard.setData(new ClipboardData(text: data));
+                    await Clipboard.setData(new ClipboardData(text: data));
+                    if(widget.onCopied != null){
+                      widget.onCopied(context, data);
+                    }
                   }),
                   Container(width: 5,),
                   widgetIcon(Icons.content_paste,
