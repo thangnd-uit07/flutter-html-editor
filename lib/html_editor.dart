@@ -314,40 +314,24 @@ class HtmlEditorState extends State<HtmlEditor> {
 
   dialogPickImage(BuildContext context) {
     return showDialog(
-        context: context,
-        barrierDismissible: true,
-        builder: (BuildContext context) {
-          return AlertDialog(
-            elevation: 0,
-            backgroundColor: Colors.transparent,
-            content: Container(
+      context: context,
+      barrierDismissible: true,        
+      builder: (BuildContext context) {
+        return Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.all(Radius.circular(8)),
+                borderRadius: BorderRadius.all(Radius.circular(0)),
               ),
               padding: const EdgeInsets.all(12),
-              height: 240,
-              width: MediaQuery.of(context).size.width,
               child: widget.imageSelector,
-              /*
-              PickImage(
-                color: Colors.black45,
-                callbackFile: (file) async {
-                  String filename = p.basename(file.path);
-                  List<int> imageBytes = await file.readAsBytes();
-                  String base64Image =
-                      "<img width=\"${widget.widthImage}\" src=\"data:image/png;base64, "
-                      "${base64Encode(imageBytes)}\" data-filename=\"$filename\">";
-
-                  String txt =
-                      "\$('.note-editable').append( '" + base64Image + "');";
-                  _controller.evaluateJavascript(txt);
-                }
-              )
-               */
-            ),
-          );
-        });
+            )
+          ],
+        );
+      }
+    );
   }
 
   bottomSheetPickImage(context) {
