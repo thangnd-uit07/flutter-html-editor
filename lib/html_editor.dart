@@ -151,6 +151,7 @@ class HtmlEditorState extends State<HtmlEditor> {
                           "$txtIsi" +
                         "</div>";
                       \$('#summernote').summernote('insertNode', div.firstChild);
+                      1;
                     ''';
                     
                     await setFocus();
@@ -262,33 +263,33 @@ class HtmlEditorState extends State<HtmlEditor> {
     String txt =
         "document.getElementsByClassName('note-editable')[0].innerHTML = '" +
             txtIsi +
-            "';";
+            "';1;";
     _controller.evaluateJavascript(txt);
   }
 
   setFullContainer() {
     _controller.evaluateJavascript(
-        '\$("#summernote").summernote("fullscreen.toggle");');
+        '\$("#summernote").summernote("fullscreen.toggle");1;');
   }
 
   Future<void> setFocus() async{
-    await _controller.evaluateJavascript("\$('#summernote').summernote('focus');");
+    await _controller.evaluateJavascript("\$('#summernote').summernote('focus');1;");
   }
 
   Future<void> setEmpty() async{
-    await _controller.evaluateJavascript("\$('#summernote').summernote('reset');");
+    await _controller.evaluateJavascript("\$('#summernote').summernote('reset');1;");
   }
 
   Future<void> undo() async{
-    await _controller.evaluateJavascript("\$('#summernote').summernote('undo');");
+    await _controller.evaluateJavascript("\$('#summernote').summernote('undo');1;");
   }
 
   Future<void> redo() async{
-    await _controller.evaluateJavascript("\$('#summernote').summernote('redo');");
+    await _controller.evaluateJavascript("\$('#summernote').summernote('redo');1;");
   }
 
   setHint(String text) {
-    String hint = '\$(".note-placeholder").html("$text");';
+    String hint = '\$(".note-placeholder").html("$text");1;';
     _controller.evaluateJavascript(hint);
   }
 
